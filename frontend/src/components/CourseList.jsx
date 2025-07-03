@@ -1,19 +1,23 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Button, Alert, Row, Col } from 'react-bootstrap';
-import { Link } from 'react-router-dom';
+import { Card, Button, Alert, Row, Col, Modal, Accordion } from 'react-bootstrap';
 import { useCart } from '../context/CartContext';
+import { useNavigate } from 'react-router-dom';
 import api from '../utils/axiosInstance';
 
 const CourseList = ({ token, role }) => {
   const [courses, setCourses] = useState([]);
   const [error, setError] = useState('');
   const { addToCart } = useCart();
+  const navigate = useNavigate();
+
+  const [selectedCourse, setSelectedCourse] = useState(null);
+  const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
     const fetchCourses = async () => {
       try {
         const response = await api.get('lms/courses/', {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
         setCourses(response.data);
       } catch (error) {
@@ -22,10 +26,18 @@ const CourseList = ({ token, role }) => {
       }
     };
 
-    if (token) fetchCourses();
+    fetchCourses();
   }, [token]);
 
-  console.log('User role:', role);
+  const handleCardClick = (course) => {
+    setSelectedCourse(course);
+    setShowModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setSelectedCourse(null);
+  };
 
   return (
     <div>
@@ -37,7 +49,11 @@ const CourseList = ({ token, role }) => {
 
           return (
             <Col key={course.id} className='mb-2'>
-              <Card className="h-100 rounded-3 shadow-sm overflow-hidden">
+              <Card
+                className="h-100 rounded-3 shadow-sm overflow-hidden"
+                onClick={() => handleCardClick(course)}
+                style={{ cursor: 'pointer' }}
+              >
                 <Card.Img
                   variant="top"
                   src={course.image || 'https://via.placeholder.com/400x200.png?text=Course+Image'}
@@ -49,34 +65,88 @@ const CourseList = ({ token, role }) => {
                   <strong>₹{course.price || 0}</strong>
                 </Card.Body>
 
-                {role === 'student' && (
-                  <div className="d-flex border-top">
-                    <EnrollButton token={token} courseId={course.id} />
+                {token && role === 'student' ? (
+                  <div className='d-flex border-top'>
+                    <EnrollButton token={token} courseId={course.id} navigate={navigate} />
                     <Button
                       variant="outline-secondary"
                       className="w-50 rounded-0 border-start"
-                      onClick={() => addToCart(course)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        addToCart(course);
+                      }}
                     >
                       Add to Cart
                     </Button>
                   </div>
+                ) : (
+                  <Button
+                    variant="outline-success"
+                    className="w-100 rounded-0"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate('/login');
+                    }}
+                  >
+                    Login to Enroll or Add to Cart
+                  </Button>
                 )}
               </Card>
             </Col>
           );
         })}
       </Row>
+
+      {/* Modal to show concepts */}
+      <Modal show={showModal} onHide={handleCloseModal} size="lg" centered>
+        <Modal.Header closeButton>
+          <Modal.Title>{selectedCourse?.title} - Concepts</Modal.Title>
+        </Modal.Header>
+
+        <Modal.Body>
+          {selectedCourse?.concepts?.length ? (
+            <Accordion defaultActiveKey="0">
+              {selectedCourse.concepts.map((concept, idx) => (
+                <Accordion.Item eventKey={String(idx)} key={concept.id || idx}>
+                  <Accordion.Header>{concept.title}</Accordion.Header>
+                  <Accordion.Body>
+                    <p><strong>Description:</strong> {concept.content}</p>
+                    {concept.duration && <p><strong>Duration:</strong> {concept.duration}</p>}
+                    {concept.video_link && (
+                      <p>
+                        <strong>Video:</strong>{' '}
+                        <a href={concept.video_link} target="_blank" rel="noopener noreferrer">Watch</a>
+                      </p>
+                    )}
+                  </Accordion.Body>
+                </Accordion.Item>
+              ))}
+            </Accordion>
+          ) : (
+            <p>No concepts available for this course.</p>
+          )}
+        </Modal.Body>
+
+        <Modal.Footer>
+          <Button variant="secondary" onClick={handleCloseModal}>Close</Button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 };
 
-const EnrollButton = ({ token, courseId }) => {
+const EnrollButton = ({ token, courseId, navigate }) => {
   const [enrolled, setEnrolled] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleEnroll = async () => {
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+
     if (!courseId) {
-      alert('Invalid course ID. Cannot enroll.');
+      alert('Invalid course ID.');
       return;
     }
 
@@ -99,7 +169,10 @@ const EnrollButton = ({ token, courseId }) => {
   return (
     <Button
       variant="outline-success"
-      onClick={handleEnroll}
+      onClick={(e) => {
+        e.stopPropagation();
+        handleEnroll();
+      }}
       disabled={enrolled || loading}
       className="w-50 rounded-0"
     >

@@ -57,11 +57,47 @@ class UserProfileSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'user']
 
 
+# class CourseSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Course
+#         fields = '__all__'
+#         read_only_fields = ['created_by', 'created_at']
+
+
+class ConceptSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Concept
+        fields = ['id', 'title', 'content', 'order']
+
+
 class CourseSerializer(serializers.ModelSerializer):
+    concepts = ConceptSerializer(many=True)
+
     class Meta:
         model = Course
         fields = '__all__'
         read_only_fields = ['created_by', 'created_at']
+
+    def create(self, validated_data):
+        concepts_data = validated_data.pop('concepts', [])
+        course = Course.objects.create(**validated_data)
+        for concept_data in concepts_data:
+            Concept.objects.create(course=course, **concept_data)
+        return course
+
+    def update(self, instance, validated_data):
+        concepts_data = validated_data.pop('concepts', [])
+        instance = super().update(instance, validated_data)
+
+        # Optional: Clear and re-add concepts (simpler way)
+        instance.concepts.all().delete()
+        for concept_data in concepts_data:
+            Concept.objects.create(course=instance, **concept_data)
+
+        return instance
+
+
+
 
 class EnrollmentSerializer(serializers.ModelSerializer):
     course = serializers.PrimaryKeyRelatedField(

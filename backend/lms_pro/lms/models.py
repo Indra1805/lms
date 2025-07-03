@@ -29,6 +29,18 @@ class Course(models.Model):
     def __str__(self):
         return self.title
     
+class Concept(models.Model):
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='concepts')
+    title = models.CharField(max_length=255)
+    content = models.TextField()
+    order = models.PositiveIntegerField(help_text="Order of the concept in the course")
+
+    class Meta:
+        ordering = ['order']  # Optional: ensures concepts appear in order
+
+    def __str__(self):
+        return f"{self.order}. {self.title} ({self.course.title})"
+    
 class Enrollment(models.Model):
     student = models.ForeignKey(User, on_delete=models.CASCADE, related_name='enrollments')
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='enrollments')

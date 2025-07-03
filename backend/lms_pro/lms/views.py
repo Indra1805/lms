@@ -92,6 +92,8 @@ class CourseViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
             return [IsAuthenticated(), IsFacultyOrAdmin()]
+        elif self.action in ['list', 'retrieve']:
+            return [AllowAny()]
         return [IsAuthenticated()]
 
     def perform_create(self, serializer):
