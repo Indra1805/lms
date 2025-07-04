@@ -1,116 +1,3 @@
-// import React, { useEffect, useState } from 'react';
-// import { useParams, useNavigate } from 'react-router-dom';
-// import axios from 'axios';
-// import { Form, Button, Card, Alert, Image } from 'react-bootstrap';
-// import api from '../utils/axiosInstance';
-
-// const EditCourse = ({ token }) => {
-//   const { id } = useParams();
-//   const [course, setCourse] = useState({ title: '', description: '', price:null, image: null });
-//   const [existingImage, setExistingImage] = useState('');
-//   const [error, setError] = useState('');
-//   const navigate = useNavigate();
-
-//   useEffect(() => {
-//     const fetchCourse = async () => {
-//       try {
-//         const response = await api.get(`lms/courses/${id}/`, {
-//           headers: { Authorization: `Bearer ${token}` },
-//         });
-//         setCourse({
-//           title: response.data.title,
-//           description: response.data.description,
-//           price: response.data.price,
-//         });
-//         setExistingImage(response.data.image);
-//       } catch (err) {
-//         setError('Failed to load course');
-//       }
-//     };
-//     fetchCourse();
-//   }, [id, token]);
-
-//   const handleSubmit = async (e) => {
-//     e.preventDefault();
-//     const formData = new FormData();
-//     formData.append('title', course.title);
-//     formData.append('description', course.description);
-//     formData.append('price', course.price);
-//     if (course.image) {
-//       formData.append('image', course.image);
-//     }
-
-//     try {
-//       await api.put(`lms/courses/${id}/`, formData, {
-//         headers: {
-//           Authorization: `Bearer ${token}`,
-//           'Content-Type': 'multipart/form-data',
-//         },
-//       });
-//       navigate('/dashboard');
-//     } catch (err) {
-//       setError('Failed to update course');
-//     }
-//   };
-
-//   return (
-//     <Card className="p-4 mt-3">
-//       <h4>Edit Course</h4>
-//       {error && <Alert variant="danger">{error}</Alert>}
-//       <Form onSubmit={handleSubmit}>
-//         <Form.Group className="mb-3">
-//           <Form.Label>Title</Form.Label>
-//           <Form.Control
-//             type="text"
-//             value={course.title}
-//             onChange={(e) => setCourse({ ...course, title: e.target.value })}
-//             required
-//           />
-//         </Form.Group>
-//         <Form.Group className="mb-3">
-//           <Form.Label>Description</Form.Label>
-//           <Form.Control
-//             as="textarea"
-//             value={course.description}
-//             onChange={(e) => setCourse({ ...course, description: e.target.value })}
-//             required
-//           />
-//         </Form.Group>
-//         <Form.Group className="mb-3">
-//           <Form.Label>Price</Form.Label>
-//           <Form.Control
-//             type="number"
-//             value={course.price}
-//             onChange={(e) => setCourse({ ...course, price: e.target.value })}
-//             required
-//           />
-//         </Form.Group>
-//         <Form.Group className="mb-3">
-//           <Form.Label>Course Image</Form.Label>
-//           <Form.Control
-//             type="file"
-//             accept="image/*"
-//             onChange={(e) => setCourse({ ...course, image: e.target.files[0] })}
-//           />
-//         </Form.Group>
-//         {existingImage && (
-//           <div className="mb-3">
-//             <p>Current Image:</p>
-//             <Image src={`http://localhost:8000${existingImage}`} fluid rounded />
-//           </div>
-//         )}
-//         <Button type="submit" variant="primary">
-//           Update Course
-//         </Button>
-//       </Form>
-//     </Card>
-//   );
-// };
-
-// export default EditCourse;
-
-
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Form, Button, Card, Alert, Image, Row, Col } from 'react-bootstrap';
@@ -118,7 +5,7 @@ import api from '../utils/axiosInstance';
 
 const EditCourse = ({ token }) => {
   const { id } = useParams();
-  const [course, setCourse] = useState({ title: '', description: '', price: null, image: null });
+  const [course, setCourse] = useState({ title: '', description: '', price: '', image: null });
   const [existingImage, setExistingImage] = useState('');
   const [concepts, setConcepts] = useState([]);
   const [error, setError] = useState('');
@@ -130,13 +17,12 @@ const EditCourse = ({ token }) => {
         const response = await api.get(`lms/courses/${id}/`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-
         setCourse({
           title: response.data.title,
           description: response.data.description,
           price: response.data.price,
+          image: null,
         });
-        console.log(response.data)
         setExistingImage(response.data.image);
         setConcepts(response.data.concepts || []);
       } catch (err) {
@@ -159,38 +45,29 @@ const EditCourse = ({ token }) => {
   const removeConcept = (index) => {
     const updated = [...concepts];
     updated.splice(index, 1);
-    setConcepts(updated.map((c, i) => ({ ...c, order: i + 1 }))); // reorder
+    setConcepts(updated.map((c, i) => ({ ...c, order: i + 1 })));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const payload = {
-      title: course.title,
-      description: course.description,
-      price: course.price,
-      concepts: concepts,
-    };
+    const formData = new FormData();
+    formData.append('title', course.title);
+    formData.append('description', course.description);
+    formData.append('price', course.price);
+    formData.append('concepts', JSON.stringify(concepts));
+
+    if (course.image) {
+      formData.append('image', course.image);
+    }
 
     try {
-      await api.put(`lms/courses/${id}/`, payload, {
+      await api.put(`lms/courses/${id}/`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data',
         },
       });
-
-      // If a new image is selected, upload separately
-      if (course.image) {
-        const formData = new FormData();
-        formData.append('image', course.image);
-        await api.patch(`lms/courses/${id}/`, formData, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data',
-          },
-        });
-      }
-
       navigate('/dashboard');
     } catch (err) {
       console.error(err);
@@ -246,7 +123,7 @@ const EditCourse = ({ token }) => {
         {existingImage && (
           <div className="mb-3">
             <p>Current Image:</p>
-            <Image src={existingImage} fluid rounded style={{height:'100px'}}/>
+            <Image src={existingImage} fluid rounded style={{ height: '100px' }} />
           </div>
         )}
 
@@ -291,6 +168,7 @@ const EditCourse = ({ token }) => {
               variant="outline-danger"
               onClick={() => removeConcept(index)}
               disabled={concepts.length === 1}
+              style={{ width: '150px' }}
             >
               Remove Concept
             </Button>
@@ -301,11 +179,11 @@ const EditCourse = ({ token }) => {
           + Add Concept
         </Button>
 
-        <Button type="submit" variant="outline-primary" className='mb-3 ms-1'>
+        <Button type="submit" variant="outline-primary" className="mb-3 me-2">
           Update Course
         </Button>
 
-        <Button className="mb-3 ms-1" variant="outline-info" style={{ width: '130px' }} onClick={() => navigate('/dashboard')}>
+        <Button className="mb-3" variant="outline-info" style={{ width: '130px' }} onClick={() => navigate('/dashboard')}>
           Back
         </Button>
       </Form>

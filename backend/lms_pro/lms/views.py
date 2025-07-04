@@ -9,6 +9,7 @@ from .serializers import *
 from .models import *
 from .permissions import IsFacultyOrAdmin
 from rest_framework.decorators import action
+from rest_framework.parsers import MultiPartParser, FormParser
 
 # Create your views here.
 
@@ -88,6 +89,7 @@ class LogoutView(APIView):
 class CourseViewSet(viewsets.ModelViewSet):
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
+    parser_classes = [MultiPartParser, FormParser]
 
     def get_permissions(self):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
@@ -96,8 +98,57 @@ class CourseViewSet(viewsets.ModelViewSet):
             return [AllowAny()]
         return [IsAuthenticated()]
 
-    def perform_create(self, serializer):
-        serializer.save(created_by=self.request.user)
+    def create(self, request, *args, **kwargs):
+        data = request.data.copy()
+
+        # Parse concepts JSON string
+        concepts_raw = data.get('concepts')
+        if isinstance(concepts_raw, str):
+            try:
+                concepts_list = json.loads(concepts_raw)
+                data.setlist('concepts', [])  # Avoid serializer error
+            except json.JSONDecodeError:
+                return Response({'concepts': ['Invalid JSON format']}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({'concepts': ['Missing or invalid concepts']}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        course = serializer.save(created_by=request.user)
+
+        # Manually save concepts
+        for concept in concepts_list:
+            Concept.objects.create(course=course, **concept)
+
+        return Response(self.get_serializer(course).data, status=status.HTTP_201_CREATED)
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        data = request.data.copy()
+
+        # Parse concepts JSON string
+        concepts_raw = data.get('concepts')
+        if isinstance(concepts_raw, str):
+            try:
+                concepts_list = json.loads(concepts_raw)
+                data.setlist('concepts', [])  # Prevent validation issues
+            except json.JSONDecodeError:
+                return Response({'concepts': ['Invalid JSON format']}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            concepts_list = None  # Allow update without changing concepts
+
+        serializer = self.get_serializer(instance, data=data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        course = serializer.save()
+
+        # If concepts provided, clear and recreate
+        if concepts_list is not None:
+            course.concepts.all().delete()
+            for concept in concepts_list:
+                Concept.objects.create(course=course, **concept)
+
+        return Response(self.get_serializer(course).data)
 
 
 

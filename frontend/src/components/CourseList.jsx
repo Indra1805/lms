@@ -79,7 +79,7 @@ const CourseList = ({ token, role }) => {
                       Add to Cart
                     </Button>
                   </div>
-                ) : (
+                ) : !token ? (
                   <Button
                     variant="outline-success"
                     className="w-100 rounded-0"
@@ -90,7 +90,8 @@ const CourseList = ({ token, role }) => {
                   >
                     Login to Enroll or Add to Cart
                   </Button>
-                )}
+                ) : null}
+
               </Card>
             </Col>
           );
@@ -110,7 +111,25 @@ const CourseList = ({ token, role }) => {
                 <Accordion.Item eventKey={String(idx)} key={concept.id || idx}>
                   <Accordion.Header>{concept.title}</Accordion.Header>
                   <Accordion.Body>
-                    <p><strong>Description:</strong> {concept.content}</p>
+                    {/* <p><strong>Description:</strong>{concept.content}</p> */}
+                    <p><strong>Description:</strong></p>
+                    <ul>
+                      {concept.content
+                        .split(/([.?])/g)
+                        .reduce((acc, part, idx, arr) => {
+                          if (part === '.' || part === '?') {
+                            acc[acc.length - 1] += part;
+                          } else {
+                            acc.push(part.trim());
+                          }
+                          return acc;
+                        }, [])
+                        .filter(line => line)
+                        .map((line, index) => (
+                          <li key={index}>{line}</li>
+                        ))}
+                    </ul>
+
                     {concept.duration && <p><strong>Duration:</strong> {concept.duration}</p>}
                     {concept.video_link && (
                       <p>

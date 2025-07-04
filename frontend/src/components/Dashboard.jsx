@@ -113,8 +113,8 @@ const Dashboard = () => {
               profile?.dp?.includes('://')
                 ? profile.dp
                 : profile?.dp
-                ? `http://localhost:8000${profile.dp}`
-                : 'https://via.placeholder.com/80?text=DP'
+                  ? `http://localhost:8000${profile.dp}`
+                  : 'https://via.placeholder.com/80?text=DP'
             }
             roundedCircle
             width={100}
@@ -231,7 +231,25 @@ const Dashboard = () => {
                 <Accordion.Item eventKey={String(idx)} key={concept.id || idx}>
                   <Accordion.Header>{concept.title}</Accordion.Header>
                   <Accordion.Body>
-                    <p><strong>Description:</strong> {concept.content}</p>
+                    {/* <p><strong>Description:</strong> {concept.content}</p> */}
+                    <p><strong>Description:</strong></p>
+                    <ul>
+                      {concept.content
+                        .split(/([.?])/g)
+                        .reduce((acc, part, idx, arr) => {
+                          if (part === '.' || part === '?') {
+                            acc[acc.length - 1] += part;
+                          } else {
+                            acc.push(part.trim());
+                          }
+                          return acc;
+                        }, [])
+                        .filter(line => line)
+                        .map((line, index) => (
+                          <li key={index}>{line}</li>
+                        ))}
+                    </ul>
+
                     {concept.duration && (
                       <p><strong>Duration:</strong> {concept.duration}</p>
                     )}
