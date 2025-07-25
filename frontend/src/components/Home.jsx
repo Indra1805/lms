@@ -62,9 +62,9 @@ const Home = () => {
       {/* About Section */}
       <Container className="mb-5">
         <div data-aos="fade-up">
-          <h2 className="text-center mb-4">About E-Learn</h2>
+          <h2 className="text-center mb-4">About Mentoraa</h2>
           <p className="text-center lead px-2 px-md-5">
-            E-Learn is your one-stop platform for professional and academic learning. Whether you're aiming to upskill, reskill, or teach, our courses and tools empower every learner and educator to succeed.
+            Mentoraa is your one-stop platform for professional and academic learning. Whether you're aiming to upskill, reskill, or teach, our courses and tools empower every learner and educator to succeed.
           </p>
         </div>
       </Container>

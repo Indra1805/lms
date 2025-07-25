@@ -15,6 +15,7 @@ import CartPage from './components/CartPage';
 import EditCourse from './components/EditCourse';
 import Layout from './components/Layout';
 import Home from './components/Home';
+import Payment from './components/Payment';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { CartProvider } from './context/CartContext';
 
@@ -45,6 +46,7 @@ function App() {
               <Route path="create-course" element={token ? <CourseCreate token={token} /> : <Navigate to="/login" />} />
               <Route path="edit-course/:id" element={token ? <EditCourse token={token} /> : <Navigate to="/login" />} />
               <Route path="cart" element={token ? <CartPage /> : <Navigate to="/login" />} />
+              <Route path="/payment" element={<Payment token={token} />} />
             </Route>
           </Routes>
         </div>

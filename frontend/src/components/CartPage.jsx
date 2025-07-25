@@ -1,15 +1,41 @@
-import React from 'react';
-import { Card, Button, Row, Col, ListGroup } from 'react-bootstrap';
+import React, { useState } from 'react';
+import { Card, Button, Row, Col, ListGroup, Modal } from 'react-bootstrap';
 import { useCart } from '../context/CartContext';
+import { useNavigate } from 'react-router-dom';
 
 const CartPage = () => {
   const { cart, removeFromCart, clearCart } = useCart();
+  const navigate = useNavigate();
 
-  // const total = cart.reduce((sum, course) => sum + (course.price || 0), 0);
   const total = cart.reduce((sum, course) => sum + Number(course.price || 0), 0);
-  const gst = (total*18)/100
-  const grand_total = total + gst
+  const gst = (total * 18) / 100;
+  const grand_total = total + gst;
 
+  const [showRegistration, setShowRegistration] = useState(false);
+  const [registrationData, setRegistrationData] = useState({
+    first_name: '',
+    last_name: '',
+    phone: '',
+    email: ''
+  });
+
+  const handleProceedCheckout = () => {
+    setShowRegistration(true);
+  };
+
+  const handleRegistrationSubmit = (e) => {
+    e.preventDefault();
+    setShowRegistration(false);
+    navigate('/payment', {
+      state: {
+        ...registrationData,
+        courses: cart,
+        total,
+        gst,
+        grand_total
+      }
+    });
+  };
 
   return (
     <div>
@@ -44,21 +70,63 @@ const CartPage = () => {
                   <p>(+) GST</p> <hr />
                   <h5>Grand Total</h5>
                 </Col>
-                {/* <hr /> */}
                 <Col>
-                  <p>: ₹{total.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                  <p>: ₹&nbsp;{gst.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p> <hr />
-                  <h5>: ₹{grand_total.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h5>
+                  <p>: ₹{total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
+                  <p>: ₹{gst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p> <hr />
+                  <h5>: ₹{grand_total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</h5>
                 </Col>
               </Row>
-
               <div className="d-flex justify-content-start mt-1">
-                <Button variant="success" onClick={() => alert('Proceeding to checkout...')}>Proceed to Checkout</Button>
+                <Button variant="success" onClick={handleProceedCheckout}>
+                  Proceed to Checkout
+                </Button>
               </div>
             </Card>
           </Col>
         </Row>
       )}
+
+      {/* Registration Modal */}
+      <Modal show={showRegistration} onHide={() => setShowRegistration(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Course Registration</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <form onSubmit={handleRegistrationSubmit}>
+            <input
+              type="text"
+              className="form-control mb-2"
+              placeholder="First Name"
+              required
+              onChange={(e) => setRegistrationData({ ...registrationData, first_name: e.target.value })}
+            />
+            <input
+              type="text"
+              className="form-control mb-2"
+              placeholder="Last Name"
+              required
+              onChange={(e) => setRegistrationData({ ...registrationData, last_name: e.target.value })}
+            />
+            <input
+              type="text"
+              className="form-control mb-2"
+              placeholder="Phone"
+              required
+              onChange={(e) => setRegistrationData({ ...registrationData, phone: e.target.value })}
+            />
+            <input
+              type="email"
+              className="form-control mb-3"
+              placeholder="Email"
+              required
+              onChange={(e) => setRegistrationData({ ...registrationData, email: e.target.value })}
+            />
+            <Button type="submit" className="w-100" variant="success">
+              Proceed to Payment
+            </Button>
+          </form>
+        </Modal.Body>
+      </Modal>
     </div>
   );
 };

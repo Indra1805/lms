@@ -179,7 +179,7 @@ const EditCourse = ({ token }) => {
           + Add Concept
         </Button>
 
-        <Button type="submit" variant="outline-primary" className="mb-3 me-2">
+        <Button type="submit" variant="outline-primary" className="mb-3 ms-2 me-2">
           Update Course
         </Button>
 

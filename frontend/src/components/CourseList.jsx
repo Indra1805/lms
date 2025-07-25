@@ -13,6 +13,14 @@ const CourseList = ({ token, role }) => {
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
+  const [showRegistration, setShowRegistration] = useState(false);
+  const [registrationData, setRegistrationData] = useState({
+    first_name: '',
+    last_name: '',
+    phone: '',
+    email: ''
+  });
+
   useEffect(() => {
     const fetchCourses = async () => {
       try {
@@ -25,7 +33,6 @@ const CourseList = ({ token, role }) => {
         setError('Failed to load courses.');
       }
     };
-
     fetchCourses();
   }, [token]);
 
@@ -39,6 +46,22 @@ const CourseList = ({ token, role }) => {
     setSelectedCourse(null);
   };
 
+  const handleEnrollClick = (course) => {
+    setSelectedCourse(course);
+    setShowRegistration(true);
+  };
+
+  const handleRegistrationSubmit = (e) => {
+    e.preventDefault();
+    setShowRegistration(false);
+    navigate('/payment', {
+      state: {
+        ...registrationData,
+        courses: [selectedCourse]
+      }
+    });
+  };
+
   return (
     <div>
       {error && <Alert variant="danger">{error}</Alert>}
@@ -46,7 +69,6 @@ const CourseList = ({ token, role }) => {
       <Row xs={1} md={2} lg={4} className="g-4">
         {courses.map((course) => {
           if (!course || !course.id) return null;
-
           return (
             <Col key={course.id} className='mb-2'>
               <Card
@@ -67,7 +89,16 @@ const CourseList = ({ token, role }) => {
 
                 {token && role === 'student' ? (
                   <div className='d-flex border-top'>
-                    <EnrollButton token={token} courseId={course.id} navigate={navigate} />
+                    <Button
+                      variant="outline-success"
+                      className="w-50 rounded-0"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEnrollClick(course);
+                      }}
+                    >
+                      Get Enrolled
+                    </Button>
                     <Button
                       variant="outline-secondary"
                       className="w-50 rounded-0 border-start"
@@ -91,19 +122,17 @@ const CourseList = ({ token, role }) => {
                     Login to Enroll or Add to Cart
                   </Button>
                 ) : null}
-
               </Card>
             </Col>
           );
         })}
       </Row>
 
-      {/* Modal to show concepts */}
+      {/* Course Concepts Modal */}
       <Modal show={showModal} onHide={handleCloseModal} size="lg" centered>
         <Modal.Header closeButton>
           <Modal.Title>{selectedCourse?.title} - Concepts</Modal.Title>
         </Modal.Header>
-
         <Modal.Body>
           {selectedCourse?.concepts?.length ? (
             <Accordion defaultActiveKey="0">
@@ -111,12 +140,11 @@ const CourseList = ({ token, role }) => {
                 <Accordion.Item eventKey={String(idx)} key={concept.id || idx}>
                   <Accordion.Header>{concept.title}</Accordion.Header>
                   <Accordion.Body>
-                    {/* <p><strong>Description:</strong>{concept.content}</p> */}
                     <p><strong>Description:</strong></p>
                     <ul>
                       {concept.content
                         .split(/([.?])/g)
-                        .reduce((acc, part, idx, arr) => {
+                        .reduce((acc, part) => {
                           if (part === '.' || part === '?') {
                             acc[acc.length - 1] += part;
                           } else {
@@ -129,7 +157,6 @@ const CourseList = ({ token, role }) => {
                           <li key={index}>{line}</li>
                         ))}
                     </ul>
-
                     {concept.duration && <p><strong>Duration:</strong> {concept.duration}</p>}
                     {concept.video_link && (
                       <p>
@@ -145,58 +172,53 @@ const CourseList = ({ token, role }) => {
             <p>No concepts available for this course.</p>
           )}
         </Modal.Body>
-
         <Modal.Footer>
           <Button variant="secondary" onClick={handleCloseModal}>Close</Button>
         </Modal.Footer>
       </Modal>
+
+      {/* Registration Modal */}
+      <Modal show={showRegistration} onHide={() => setShowRegistration(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Course Registration</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <form onSubmit={handleRegistrationSubmit}>
+            <input
+              type="text"
+              className="form-control mb-2"
+              placeholder="First Name"
+              required
+              onChange={(e) => setRegistrationData({ ...registrationData, first_name: e.target.value })}
+            />
+            <input
+              type="text"
+              className="form-control mb-2"
+              placeholder="Last Name"
+              required
+              onChange={(e) => setRegistrationData({ ...registrationData, last_name: e.target.value })}
+            />
+            <input
+              type="text"
+              className="form-control mb-2"
+              placeholder="Phone"
+              required
+              onChange={(e) => setRegistrationData({ ...registrationData, phone: e.target.value })}
+            />
+            <input
+              type="email"
+              className="form-control mb-3"
+              placeholder="Email"
+              required
+              onChange={(e) => setRegistrationData({ ...registrationData, email: e.target.value })}
+            />
+            <Button type="submit" className="w-100" variant="success">
+              Proceed to Payment
+            </Button>
+          </form>
+        </Modal.Body>
+      </Modal>
     </div>
-  );
-};
-
-const EnrollButton = ({ token, courseId, navigate }) => {
-  const [enrolled, setEnrolled] = useState(false);
-  const [loading, setLoading] = useState(false);
-
-  const handleEnroll = async () => {
-    if (!token) {
-      navigate('/login');
-      return;
-    }
-
-    if (!courseId) {
-      alert('Invalid course ID.');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      await api.post(
-        'lms/enrollments/',
-        { course: courseId },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setEnrolled(true);
-    } catch (err) {
-      console.error('Enrollment error:', err.response?.data || err.message);
-      alert('Enrollment failed. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <Button
-      variant="outline-success"
-      onClick={(e) => {
-        e.stopPropagation();
-        handleEnroll();
-      }}
-      disabled={enrolled || loading}
-      className="w-50 rounded-0"
-    >
-      {enrolled ? 'Enrolled' : loading ? 'Enrolling...' : 'Get Enrolled'}
-    </Button>
   );
 };
 
