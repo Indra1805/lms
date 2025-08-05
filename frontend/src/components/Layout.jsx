@@ -10,30 +10,6 @@ const Layout = ({ token, setToken }) => {
   const [role, setRole] = useState(null);
   const navigate = useNavigate();
 
-  // useEffect(() => {
-  //   const fetchUserInfo = async () => {
-  //     try {
-  //       const resUser = await api.get('lms/user/');
-  //       setUser(resUser.data);
-  //       setRole(resUser.data.role);
-
-  //       const resProfile = await api.get('lms/profiles/');
-  //       const matchedProfile = resProfile.data.find(p => p.user === resUser.data.id);
-  //       setProfile(matchedProfile || null);
-  //     } catch (err) {
-  //       console.error('Failed to fetch user/profile info', err);
-  //       setToken(null);
-  //       localStorage.removeItem('access');
-  //       localStorage.removeItem('refresh');
-  //       navigate('/login');
-  //     }
-  //   };
-
-  //   if (token) {
-  //     fetchUserInfo();
-  //   }
-  // }, [token, setToken, navigate]);
-
   useEffect(() => {
     const fetchUserInfo = async () => {
       try {
